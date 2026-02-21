@@ -13,7 +13,7 @@ function Login() {
          if(res.data.status===200){
             localStorage.setItem("token",res.data.token);
             toast.success(res.data.message);
-            navigate("/")
+            navigate("/dashboard")
          }
          else{
             toast.error(res.data.message);

@@ -7,6 +7,7 @@ import Register from './register.tsx';
 import Login from './login.tsx';
 import Dashboard from './dashboard.tsx';
 import GameRoom from './gameroom.tsx';
+import WatchParty from './watchparty.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/gameroom/:id/:uniqueId" element={<GameRoom />} />
+        <Route path="/watchparty/:id" element={<WatchParty />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

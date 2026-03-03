@@ -1,6 +1,7 @@
 import { Express } from "express";
 import express from "express";
 import { AuthService } from "./services/authService";
+import gameManager from "./services/gameManager";
 
 
 const user=new AuthService();
@@ -18,5 +19,9 @@ export function initHttp(app: Express) {
         const {email, password} = req.body;
         const response=await user.login({email,password})
         res.json(response)
+    })
+    app.get("/rooms", (req, res) => {
+        const rooms=gameManager.getAllRooms();
+        res.json(rooms)
     })
 }

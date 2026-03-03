@@ -20,23 +20,40 @@ export const initWs = (httpServer: HttpServer) => {
       if (playerCount === 2) {
         const players = waitingRoomService.getPlayer(roomId);
         if (players && players[0] && players[1]) {
-          const state=gameManager.addRoom(roomId, players[0], players[1]);
-          io.to(roomId).emit("start-game",state);
+          const state = gameManager.addRoom(roomId, players[0], players[1]);
+          io.to(roomId).emit("start-game", state);
           waitingRoomService.removeWaiting(roomId);
         }
       }
     });
-    socket.on("make-move",(data:{
-      roomId:string,
-      row:number,
-      col:number,
-      playerId:string
-    })=>{
-      const room=gameManager.getRoom(data.roomId);
+    socket.on(
+      "make-move",
+      (data: {
+        roomId: string;
+        row: number;
+        col: number;
+        playerId: string;
+      }) => {
+        const room = gameManager.getRoom(data.roomId);
+        if (room) {
+          room.makeMove(data.row, data.col, data.playerId);
+          io.to(data.roomId).emit("game-state", room);
+          if (room.player1points === 3 || room.player2points === 3) {
+            io.to(data.roomId).emit(
+              "game-over",
+              room.player1points === 3 ? room.player1 : room.player2,
+            );
+            gameManager.removeRoom(data.roomId);
+          }
+        }
+      },
+    );
+    socket.on("join-watching", (roomId: string) => {
+      socket.join(roomId);
+      const room=gameManager.getRoom(roomId);
       if(room){
-        room.makeMove(data.row,data.col,data.playerId);
-        io.to(data.roomId).emit("game-state",room);
+        socket.emit("start-watching",room);
       }
-    })
+    });
   });
 };

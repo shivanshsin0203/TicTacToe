@@ -49,6 +49,10 @@ function GameRoom() {
     socket.current?.on("game-state",(data:GameState)=>{
       setGameState(data);
     })
+    socket.current?.on("game-over",(data:string)=>{
+      toast.success(`${data} Wins`);
+      setStartGame(false);
+    })
   }, [socket, params.id, params.uniqueId]);
   return (
     <div>

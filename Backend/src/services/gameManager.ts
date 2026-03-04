@@ -8,11 +8,22 @@ interface Room{
     player1points:number;
     player2points:number;
 }
+interface Player {
+    playerId: string;
+    socketId: string;
+}
+interface LivePlayer{
+    RoomId:string;
+    playerId:string;
+}
 class GameManager {
    public rooms:Map<string,GameService>=new Map();
-   addRoom(roomId:string,player1:string,player2:string){
-    this.rooms.set(roomId,new GameService(player1,player2,roomId));
+   public players:Map<string,LivePlayer>=new Map();
+   addRoom(roomId:string,player1:Player,player2:Player){
+    this.rooms.set(roomId,new GameService(player1.playerId,player2.playerId,roomId));
     const room=this.rooms.get(roomId);
+    this.players.set(player1.socketId,{RoomId:roomId,playerId:player1.playerId});
+    this.players.set(player2.socketId,{RoomId:roomId,playerId:player2.playerId});
     return {
         gameState:room?.gameState,
         turn:room?.turn,
@@ -29,6 +40,7 @@ class GameManager {
    }
    removeRoom(roomId:string){
     this.rooms.delete(roomId);
+    this.players.delete(roomId);
    }
    getAllRooms(){
     let room:Room[]=[];
@@ -44,6 +56,15 @@ class GameManager {
         })
      })
      return room;
+   }
+   getDisconnectedPlayer(socketId:string){
+    return this.players.get(socketId);
+   }
+   removeDisconnectedPlayer(socketId:string){
+    this.players.delete(socketId);
+   }
+   addDisconnectedPlayer(roomId:string,playerId:string,socketId:string){
+    this.players.set(socketId,{RoomId:roomId,playerId:playerId});
    }   
 }
 const gameManager=new GameManager();

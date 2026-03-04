@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 import { useSocket } from "./lib/socket";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 interface GameState {
   gameState: string[][];
@@ -17,6 +17,13 @@ function GameRoom() {
   const socket = useSocket("dsadsd");
   const [startGame, setStartGame] = useState(false);
   const [gameState, setGameState] = useState<GameState>();
+  const [disconnectedPlayer, setDisconnectedPlayer] = useState<string | null>(
+    null,
+  );
+  const [countdown, setCountdown] = useState(15);
+  const disconnectTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   const handleCellClick = (row: number, col: number, cell: string) => {
     if (!socket || !gameState) return;
@@ -46,16 +53,73 @@ function GameRoom() {
       setStartGame(true);
       setGameState(data);
     });
-    socket.current?.on("game-state",(data:GameState)=>{
+    socket.current?.on("game-state", (data: GameState) => {
       setGameState(data);
-    })
-    socket.current?.on("game-over",(data:string)=>{
-      toast.success(`${data} Wins`);
+    });
+    socket.current?.on("game-over", (data: string) => {
+      toast.success(`${data}`);
       setStartGame(false);
-    })
+      // Clear disconnect overlay if game ends
+      if (disconnectTimerRef.current) {
+        clearInterval(disconnectTimerRef.current);
+        disconnectTimerRef.current = null;
+      }
+      setDisconnectedPlayer(null);
+      setCountdown(15);
+    });
+    socket.current?.on("player-disconnected", (data: string) => {
+      setDisconnectedPlayer(data);
+      setCountdown(15);
+      if (disconnectTimerRef.current) clearInterval(disconnectTimerRef.current);
+      disconnectTimerRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            if (disconnectTimerRef.current)
+              clearInterval(disconnectTimerRef.current);
+            disconnectTimerRef.current = null;
+            socket.current?.emit("disconnect-win", {
+              roomId: params.id,
+              disconnectedPlayerId: data,
+            });
+            setStartGame(false);
+            toast.success(`You win`);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    });
+    socket.current?.on("check-reconnect", (data: GameState) => {
+      if (disconnectTimerRef.current) {
+        clearInterval(disconnectTimerRef.current);
+        disconnectTimerRef.current = null;
+      }
+      setDisconnectedPlayer(null);
+      setCountdown(15);
+      setGameState(data);
+      setStartGame(true);
+    });
   }, [socket, params.id, params.uniqueId]);
   return (
-    <div>
+    <div className="relative">
+      {disconnectedPlayer && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="text-center text-white">
+            <h2 className="text-3xl font-bold mb-4">Player Disconnected</h2>
+            <p className="text-lg mb-2">
+              Waiting for{" "}
+              <span className="font-semibold text-yellow-400">
+                {disconnectedPlayer}
+              </span>{" "}
+              to reconnect...
+            </p>
+            <p className="text-6xl font-mono font-bold text-red-400">
+              {countdown}
+            </p>
+            <p className="text-sm mt-2 text-gray-300">seconds remaining</p>
+          </div>
+        </div>
+      )}
       <h1>GameRoom</h1>
       <p>Room ID: {params.id}</p>
       {startGame && (

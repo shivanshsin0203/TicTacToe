@@ -8,6 +8,8 @@ class GameService {
   player2Symbol: "X" | "O";
   player1points:number;
   player2points:number;
+  disconnected:boolean;
+  disconnectedPlayer:string[];
   constructor(player1: string, player2: string, roomId: string) {
     this.player1 = player1;
     this.player2 = player2;
@@ -20,6 +22,8 @@ class GameService {
     this.player2Symbol = this.player1Symbol === "X" ? "O" : "X";
     this.player1points=0;
     this.player2points=0;
+    this.disconnected=false;
+    this.disconnectedPlayer=[];
   }
   makeMove(row:number,col:number,playerId:string){
     if(this.turn!==playerId){
